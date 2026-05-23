@@ -3,6 +3,7 @@ package red.man10.man10originalfurniture
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.Material
+import org.bukkit.OfflinePlayer
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemFlag
 import org.bukkit.inventory.ItemStack
@@ -116,7 +117,11 @@ class UserData {
 
             val mysql = MySQLManager(plugin,"UserData")
 
-            val rs = mysql.query("select created_item from user_data where uuid='${p.uniqueId}'")?:return null
+            val rs = mysql.query("select created_item from user_data where uuid='${p.uniqueId}'")
+            if (rs == null){
+                mysql.close()
+                return null
+            }
 
             val dic = ConcurrentHashMap<Pair<Material,Int>,ItemStack>()
 
@@ -129,7 +134,10 @@ class UserData {
             rs.close()
             mysql.close()
 
-            if (dic.isEmpty())return null
+            if (dic.isEmpty()){
+                userData.remove(p)
+                return null
+            }
 
             data.itemDictionary = dic
             data.player = p
@@ -144,10 +152,17 @@ class UserData {
 
             val p = Bukkit.getOfflinePlayer(mcid)
 
+            addItem(p,item)
+        }
+
+        fun addItem(p: OfflinePlayer,item:ItemStack){
+
             val mysql = MySQLManager(plugin,"UserData")
 
+            mysql.execute("DELETE FROM user_data WHERE uuid='${p.uniqueId}' and material='${item.type.name}' and custom_model_data=${item.itemMeta.customModelData}")
+
             mysql.execute("INSERT INTO user_data (player, uuid, material, custom_model_data,  created_item) " +
-                    "VALUES ('${mcid}', '${p.uniqueId}', '${item.type.name}', ${item.itemMeta.customModelData},  '${Utility.itemToBase64(item)}')")
+                    "VALUES ('${p.name}', '${p.uniqueId}', '${item.type.name}', ${item.itemMeta.customModelData},  '${Utility.itemToBase64(item)}')")
 
             if (p.isOnline){
                 loadData(p.player!!)
@@ -160,6 +175,42 @@ class UserData {
 
             mysql.execute("DELETE FROM user_data WHERE material='${material.name}' AND custom_model_data=${cmd}")
 
+        }
+
+        fun removeItem(p: OfflinePlayer,material: Material,cmd:Int){
+
+            val mysql = MySQLManager(plugin,"UserData")
+
+            mysql.execute("DELETE FROM user_data WHERE uuid='${p.uniqueId}' AND material='${material.name}' AND custom_model_data=${cmd}")
+
+            if (p.isOnline){
+                loadData(p.player!!)
+            }
+
+        }
+
+        fun loadItems(p: OfflinePlayer):MutableList<ItemStack>{
+
+            val mysql = MySQLManager(plugin,"UserData")
+
+            val rs = mysql.query("select created_item from user_data where uuid='${p.uniqueId}'")
+            if (rs == null){
+                mysql.close()
+                return mutableListOf()
+            }
+
+            val list = mutableListOf<ItemStack>()
+
+            while (rs.next()){
+                val item = Utility.itemFromBase64(rs.getString("created_item")) ?: continue
+
+                list.add(item)
+            }
+
+            rs.close()
+            mysql.close()
+
+            return list
         }
     }
 

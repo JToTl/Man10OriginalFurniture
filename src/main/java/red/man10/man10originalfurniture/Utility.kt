@@ -1,6 +1,7 @@
 package red.man10.man10originalfurniture
 
 import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.util.io.BukkitObjectInputStream
 import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder
 import java.io.ByteArrayInputStream
@@ -8,6 +9,27 @@ import java.io.ByteArrayOutputStream
 import org.bukkit.util.io.BukkitObjectOutputStream as BukkitObjectOutputStream1
 
 object Utility {
+
+    fun setCustomModelData(meta: ItemMeta, customModelData: Int) {
+        meta.setCustomModelData(customModelData)
+
+        try {
+            val getComponent = meta.javaClass.methods.firstOrNull {
+                it.name == "getCustomModelDataComponent" && it.parameterCount == 0
+            } ?: return
+            val component = getComponent.invoke(meta)
+            val setFloats = component.javaClass.methods.firstOrNull {
+                it.name == "setFloats" && it.parameterCount == 1
+            } ?: return
+            val setComponent = meta.javaClass.methods.firstOrNull {
+                it.name == "setCustomModelDataComponent" && it.parameterCount == 1
+            } ?: return
+
+            setFloats.invoke(component, listOf(customModelData.toFloat()))
+            setComponent.invoke(meta, component)
+        } catch (_: Throwable) {
+        }
+    }
 
     ///////////////////////////////
     //base 64

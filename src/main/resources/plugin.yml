@@ -5,3 +5,10 @@ api-version: 1.17
 commands:
   mf:
     default: op
+permissions:
+  myfurniture.op:
+    default: op
+  myfurniture.user:
+    default: op
+  myfurniture.edit:
+    default: op

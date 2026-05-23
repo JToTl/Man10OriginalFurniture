@@ -7,14 +7,17 @@ import org.bukkit.entity.Player
 import org.bukkit.event.Listener
 import org.bukkit.inventory.ItemStack
 import org.bukkit.plugin.java.JavaPlugin
+import red.man10.man10library.MJavaPlugin
 import red.man10.man10originalfurniture.menu.Event
+import red.man10.man10originalfurniture.menu.EditFurnitureMenu
 import red.man10.man10originalfurniture.menu.MainMenu
 
-class Man10OriginalFurniture : JavaPlugin() , Listener{
+class Man10OriginalFurniture : MJavaPlugin() , Listener{
 
     companion object{
         const val OP = "myfurniture.op"
         const val USER = "myfurniture.user"
+        const val EDIT = "myfurniture.edit"
         const val prefix = "§a§l[MyFurniture]"
 
         lateinit var plugin : JavaPlugin
@@ -23,6 +26,7 @@ class Man10OriginalFurniture : JavaPlugin() , Listener{
     }
 
     override fun onEnable() {
+        super.onEnable()
         // Plugin startup logic
 
         plugin = this
@@ -36,13 +40,27 @@ class Man10OriginalFurniture : JavaPlugin() , Listener{
     }
 
     override fun onDisable() {
+        super.onDisable()
         // Plugin shutdown logic
     }
 
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
 
-        if (!sender.hasPermission(USER))return true
         if (sender !is Player)return true
+
+        if (args.isNotEmpty() && args[0] == "edit"){
+            if (!sender.hasPermission(EDIT))return true
+
+            if (args.size!=2){
+                sender.sendMessage("§e§l/mf edit <player>")
+                return true
+            }
+
+            EditFurnitureMenu.openAsync(sender,args[1])
+            return true
+        }
+
+        if (!sender.hasPermission(USER))return true
 
         if (args.isEmpty()){
 
@@ -62,7 +80,7 @@ class Man10OriginalFurniture : JavaPlugin() , Listener{
                 return true
             }
 
-            "add" ->{//mf add <mcid>
+            "add" ->{//mf add <mcid> <Material> <CustomModelData>
                 if (!sender.hasPermission(OP))return true
 
                 if (args.size!=2){
